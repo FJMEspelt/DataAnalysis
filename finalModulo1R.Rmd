@@ -1,0 +1,251 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+Se dispone del siguiente archivo CSV (descárgalo al final del enunciado) con información sobre los Air Bnb de la ciudad de Milán en 2019. En el dataset, solamente aparecen apartamentos completos. El dataset original y la explicación de todas las columnas está disponible en el siguiente enlace:
+
+
+
+https://www.kaggle.com/antoniokaggle/milan-airbnb-open-data-only-entire-apartments
+
+
+
+Con esta información, alumno debe realizar los siguientes procesos de analítica:
+
+
+
+• Cargar el archivo “Airbnb_Milan.csv” como dataframe.
+
+• Crear un nuevo dataframe que contenga únicamente las siguientes columnas:
+
+“host_is_superhost”
+ “host_identity_verified”
+“bathrooms”
+ “bedrooms”
+“daily_price”
+“security_deposit”
+“minimum_nights”
+ “number_of_reviews”
+ “review_scores_rating”
+•  Cambiar los factores de la variable “host_is_superhost” de 0, 1 a: “SI” y, “NO”. (investigar la función recode).
+
+•  Cambiar los factores de la variable “host_identity_verified” de 0, 1 a: “VERIFICA” y “NO VERIFICA”.
+
+•  Mostrar un resumen estadístico de los datos.
+
+• Filtrar el dataset por apartamentos cuyo mínimo de noches sea igual o menor que siete.
+
+•  ¿Cuál es el precio medio por día de una habitación en función de si el anfitrión tiene verificado o no su perfil?
+
+•  Quién tiene más número de reseñas, ¿un super host o no super host?
+
+•  Sobre la estadística anterior ¿quién tiene la puntuación media más alta?
+
+•  Crea un vector categórico llamado “CATEGORÍA”, en función de que, si para la puntuación de las reseñas tiene de 0 a 49, sea “NO ACONSEJABLE”; de 50 a 75 sea “ESTÁNDAR”; y de 76 a 100 sea “TOP”.
+
+•  Mostrar las frecuencias de la variable CATEGORÍA.
+
+•  Obtener el histograma del precio por día.
+
+•  Estudiar la relación entre los dormitorios y baños de forma gráfica.
+
+•  Mostrar un histograma del número de reseñas en función de si es un usuario verificado o no.
+
+• Mostrar un histograma por cada valor de “CATEGORÍA” en el que se enseñe la cuantía del depósito de seguridad en función de si el anfitrión es super host o no.
+
+
+Cargamos librerias
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+
+```{r}
+# Cargar el archivo CSV como DataFrame
+datos_airbnb <- read.csv("Airbnb_Milan.csv")
+
+```
+Crear un nuevo dataframe que contenga únicamente las siguientes columnas:
+
+“host_is_superhost”
+ “host_identity_verified”
+“bathrooms”
+ “bedrooms”
+“daily_price”
+“security_deposit”
+“minimum_nights”
+ “number_of_reviews”
+ “review_scores_rating”
+
+```{r}
+# Seleccionar las columnas deseadas
+nuevo_dataframe <- datos_airbnb[, c("host_is_superhost", 
+                                     "host_identity_verified", 
+                                     "bathrooms", 
+                                     "bedrooms", 
+                                     "daily_price", 
+                                     "security_deposit", 
+                                     "minimum_nights", 
+                                     "number_of_reviews", 
+                                     "review_scores_rating")]
+```
+Cambiar los factores de la variable “host_is_superhost” de 0, 1 a: “SI” y, “NO”. (investigar la función recode).
+```{r}
+# Cambiar los factores de la variable host_is_superhost a si o no en funcion de 0 o 1 
+nuevo_dataframe <- nuevo_dataframe %>% 
+  mutate(host_is_superhost = recode(host_is_superhost, 
+                                     `0` = "NO", 
+                                     `1` = "SI"))
+```
+
+•  Cambiar los factores de la variable “host_identity_verified” de 0, 1 a: “VERIFICA” y “NO VERIFICA”.
+```{r}
+# Cambiar los factores de la variable host_identity_verified a verifica o no en funcion de 0 o 1
+nuevo_dataframe <- nuevo_dataframe %>%
+  mutate(host_identity_verified = recode(host_identity_verified, 
+                                          `0` = "NO VERIFICA", 
+                                          `1` = "VERIFICA"))
+
+```
+•  Mostrar un resumen estadístico de los datos.
+```{r}
+# Mostrar un resumen estadístico de los datos
+summary(nuevo_dataframe)
+```
+• Filtrar el dataset por apartamentos cuyo mínimo de noches sea igual o menor que siete.
+```{r}
+# Filtrar el dataset por apartamentos con mínimo de noches igual o menor a siete
+filtro_apartamentos <- nuevo_dataframe %>%
+  filter(minimum_nights <= 7)
+```
+
+•  ¿Cuál es el precio medio por día de una habitación en función de si el anfitrión tiene verificado o no su perfil?
+
+```{r}
+# Comprobar si la columna 'daily_price' es numérica para posteriormente poder hacer operaciones con el valor.
+is_numeric <- is.numeric(nuevo_dataframe$daily_price)
+
+# Mostrar el resultado
+is_numeric
+```
+
+
+```{r}
+# Calcular el precio medio por día en función de la verificación del anfitrión
+precio_medio_por_verificacion <- nuevo_dataframe %>%
+  group_by(host_identity_verified) %>%
+  summarise(precio_medio = mean(daily_price, na.rm = TRUE))
+
+# Mostrar los resultados
+precio_medio_por_verificacion
+```
+
+Quién tiene más número de reseñas, ¿un super host o no super host?
+Sobre la estadística anterior ¿quién tiene la puntuación media más alta?
+
+```{r}
+# Calcular el número total de reseñas por cada grupo de superhost
+reseñas_por_superhost <- nuevo_dataframe %>%
+  group_by(host_is_superhost) %>%
+  summarise(total_reseñas = sum(number_of_reviews, na.rm = TRUE))
+
+reseñas_por_superhost
+# Determinar quién tiene más reseñas
+mayor_reseñas <- reseñas_por_superhost %>%
+  filter(total_reseñas == max(total_reseñas))
+
+# Imprimir el resultado
+cat("El grupo con más reseñas es:", mayor_reseñas$host_is_superhost, 
+    "con un total de", mayor_reseñas$total_reseñas, "reseñas.\n")
+```
+Crea un vector categórico llamado “CATEGORÍA”, en función de que, si para la puntuación de las reseñas tiene de 0 a 49, sea “NO ACONSEJABLE”; de 50 a 75 sea “ESTÁNDAR”; y de 76 a 100 sea “TOP”.
+
+```{r}
+# Crear un vector categórico CATEGORÍA basado en review_scores_rating
+nuevo_dataframe <- nuevo_dataframe %>%
+  mutate(CATEGORÍA = case_when(
+    review_scores_rating >= 0 & review_scores_rating <= 49 ~ "NO ACONSEJABLE",
+    review_scores_rating >= 50 & review_scores_rating <= 75 ~ "ESTÁNDAR",
+    review_scores_rating >= 76 & review_scores_rating <= 100 ~ "TOP",
+    TRUE ~ NA_character_  # Para manejar cualquier valor fuera de rango
+  ))
+
+
+```
+
+Mostrar las frecuencias de la variable CATEGORÍA.
+
+```{r}
+# Mostrar las frecuencias de la variable CATEGORÍA
+frecuencias_categoria <- table(nuevo_dataframe$CATEGORÍA)
+
+# Imprimir las frecuencias
+print(frecuencias_categoria)
+
+```
+Obtener el histograma del precio por día.
+```{r}
+# Crear el histograma del precio por día
+ggplot(nuevo_dataframe, aes(x = daily_price)) +
+  geom_histogram(binwidth = 10, fill = "blue", color = "black") +
+  labs(title = "Histograma del Precio por Día", 
+       x = "Precio por Día", 
+       y = "Frecuencia") +
+  theme_minimal()
+```
+Estudiar la relación entre los dormitorios y baños de forma gráfica.
+
+```{r}
+# Crear un gráfico de dispersión para estudiar la relación entre dormitorios y baños
+ggplot(nuevo_dataframe, aes(x = bedrooms, y = bathrooms)) +
+  geom_point(color = "blue", alpha = 0.5) +  # Puntos azules con un poco de transparencia
+  labs(title = "Relación entre Dormitorios y Baños", 
+       x = "Número de Dormitorios", 
+       y = "Número de Baños") +
+  theme_minimal() +
+  geom_smooth(method = "lm", color = "green")  # Línea de tendencia
+
+```
+No se observa una tendencia clara en la relacion entre baños y nº de dormitorios, he añadido la recta de regresion para una visual más clara al respecto.
+```{r}
+# Crear un histograma del número de reseñas ajustando el binwidth
+ggplot(nuevo_dataframe, aes(x = number_of_reviews, fill = host_identity_verified)) +
+  geom_histogram(binwidth = 10, position = "dodge", color = "black", alpha = 0.7) +
+  labs(title = "Histograma del Número de Reseñas por Verificación del Anfitrión", 
+       x = "Número de Reseñas", 
+       y = "Frecuencia") +
+  theme_minimal() +
+  scale_fill_manual(values = c("NO VERIFICA" = "red", "VERIFICA" = "blue"))  # Colores personalizados
+
+
+```
+Se observa que la cantidad de reseñas tiene una frecuencia mayor en los host no verificados que en los verificados, especialmente en un nº de reseñas bajo.
+
+Mostrar un histograma por cada valor de “CATEGORÍA” en el que se enseñe la cuantía del depósito de seguridad en función de si el anfitrión es super host o no.
+
+```{r}
+# Asegurarse de que host_is_superhost sea un factor con niveles correctos, modificamos el trabajo hecho anteriormente para cambiar los valores de columnas a NO SUPERHOST si es valor 0 y SUPERHOST si es valor 1, posteriormente hacemos el histograma.
+
+nuevo_dataframe$host_is_superhost <- factor(nuevo_dataframe$host_is_superhost,
+                                             levels = c("NO", "SI"),
+                                             labels = c("NO SUPERHOST", "SUPERHOST"))
+
+# Crear un histograma del depósito de seguridad por CATEGORÍA y superhost
+ggplot(nuevo_dataframe, aes(x = security_deposit, fill = host_is_superhost)) +
+  geom_histogram(binwidth = 100, position = "dodge", color = "black", alpha = 0.7) +
+  facet_wrap(~ CATEGORÍA) +  # Crear un gráfico para cada categoría
+  labs(title = "Histograma del Depósito de Seguridad por CATEGORÍA y Superhost", 
+       x = "Depósito de Seguridad", 
+       y = "Frecuencia") +
+  scale_fill_manual(values = c("NO SUPERHOST" = "red", "SUPERHOST" = "blue")) +  # Colores personalizados
+  theme_minimal() +
+  coord_cartesian(xlim = c(0, NA))  # Asegurarse de que el eje x no muestre valores negativos
+```
+
+
